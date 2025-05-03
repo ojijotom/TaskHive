@@ -1,0 +1,5 @@
+*.kt linguist-language=Kotlin
+*.kts linguist-language=Kotlin
+*.html linguist-detectable=false
+*.css linguist-detectable=false
+*.js linguist-detectable=false

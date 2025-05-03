@@ -1,3 +1,0 @@
-git add .gitattributes
-git commit -m "Add .gitattributes to correctly classify project language as Kotlin"
-git push
