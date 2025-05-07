@@ -1,22 +1,96 @@
 package com.alex.taskhive.ui.screens.dashboard
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.*
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import androidx.room.*
+import com.alex.taskhive.navigation.Routes
 import com.alex.taskhive.ui.theme.BlackBackground
 import com.alex.taskhive.ui.theme.OrangePrimary
 import com.alex.taskhive.ui.theme.WhiteText
-import com.alex.taskhive.navigation.Routes
+import kotlinx.coroutines.launch
 
+// Dummy Routes object
+object Routes {
+    const val ChatScreen = "chat_screen"
+}
+
+// ========================= ROOM DATABASE SETUP =========================
+@Entity
+data class Schedule(
+    @PrimaryKey val workerId: Int,
+    val details: String
+)
+
+@Dao
+interface ScheduleDao {
+    @Query("SELECT * FROM Schedule WHERE workerId = :id")
+    suspend fun getSchedule(id: Int): Schedule?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSchedule(schedule: Schedule)
+}
+
+@Database(entities = [Schedule::class], version = 1)
+abstract class AppDatabase : RoomDatabase() {
+    abstract fun scheduleDao(): ScheduleDao
+
+    companion object {
+        @Volatile private var INSTANCE: AppDatabase? = null
+        fun getInstance(context: Context): AppDatabase {
+            return INSTANCE ?: synchronized(this) {
+                Room.databaseBuilder(context, AppDatabase::class.java, "task_db").build().also {
+                    INSTANCE = it
+                }
+            }
+        }
+    }
+}
+
+// ========================= VIEWMODEL =========================
+class DashboardViewModel(context: Context) : ViewModel() {
+    private val dao = AppDatabase.getInstance(context).scheduleDao()
+    var schedule by mutableStateOf<Schedule?>(null)
+        private set
+
+    fun loadSchedule(workerId: Int) {
+        viewModelScope.launch {
+            schedule = dao.getSchedule(workerId)
+        }
+    }
+}
 @Composable
-fun DashboardScreen(navController: NavController) {
+fun DashboardScreen(
+    navController: NavController
+) {
+    val context = LocalContext.current
+
+    val viewModel: DashboardViewModel = viewModel(factory = object : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            @Suppress("UNCHECKED_CAST")
+            return DashboardViewModel(context.applicationContext) as T
+        }
+    })
+
+    val workerId = 1
+
+    LaunchedEffect(Unit) {
+        viewModel.loadSchedule(workerId)
+    }
+
+    val schedule = viewModel.schedule
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -31,20 +105,24 @@ fun DashboardScreen(navController: NavController) {
             style = MaterialTheme.typography.headlineMedium
         )
 
-        // Worker schedule box
-        Box(
+        Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(200.dp)
-                .background(OrangePrimary)
-                .padding(16.dp),
-            contentAlignment = Alignment.Center
+                .height(200.dp),
+            colors = CardDefaults.cardColors(containerColor = OrangePrimary)
         ) {
-            Text(
-                text = "Your schedule will appear here.",
-                color = WhiteText,
-                style = MaterialTheme.typography.bodyLarge
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = schedule?.details ?: "No schedule available.",
+                    color = WhiteText,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -59,9 +137,8 @@ fun DashboardScreen(navController: NavController) {
         }
     }
 }
-
-@Composable
 @Preview(showBackground = true)
+@Composable
 fun DashboardScreenPreview() {
     DashboardScreen(navController = rememberNavController())
 }

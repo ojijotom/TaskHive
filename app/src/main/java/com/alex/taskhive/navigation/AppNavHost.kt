@@ -1,11 +1,11 @@
 package com.alex.taskhive.navigation
 
-import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import com.alex.taskhive.data.TaskScheduleScreen
 import com.alex.taskhive.data.UserViewModel
 import com.alex.taskhive.ui.screens.assign.AssignScreen
@@ -29,9 +29,15 @@ fun AppNavHost(navController: NavHostController, userViewModel: UserViewModel) {
             TaskScheduleScreen(navController = navController)
         }
 
-        composable(Routes.ChatScreen) {
-            ChatScreen(navController = navController)
+        // UPDATED Chat Screen route with dynamic workerId
+        composable(
+            route = "chat/{workerId}",
+            arguments = listOf(navArgument("workerId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val workerId = backStackEntry.arguments?.getString("workerId") ?: ""
+            ChatScreen(workerId = workerId, navController = navController)
         }
+
         composable(Routes.AssignScreen) {
             AssignScreen(navController = navController)
         }

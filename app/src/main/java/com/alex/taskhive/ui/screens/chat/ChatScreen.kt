@@ -2,65 +2,108 @@ package com.alex.taskhive.ui.screens.chat
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
-import com.alex.taskhive.navigation.Routes
 import com.alex.taskhive.ui.theme.BlackBackground
 import com.alex.taskhive.ui.theme.OrangePrimary
 import com.alex.taskhive.ui.theme.WhiteText
 
 @Composable
-fun ChatScreen(navController: NavController) {
+fun ChatScreen(
+    workerId: String,
+    navController: NavController
+) {
+    var messageText by remember { mutableStateOf("") }
+    var messages by remember { mutableStateOf(listOf<String>()) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(BlackBackground)
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(16.dp)
     ) {
-        Text(
-            text = "Chat",
-            color = WhiteText,
-            style = MaterialTheme.typography.titleLarge
-        )
-
-        // Placeholder chat box
-        Box(
+        // Top Bar
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(300.dp)
-                .background(OrangePrimary)
-                .padding(16.dp),
-            contentAlignment = Alignment.Center
+                .padding(bottom = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
+            Button(
+                onClick = { navController.popBackStack() },
+                colors = ButtonDefaults.buttonColors(containerColor = OrangePrimary)
+            ) {
+                Text("Back", color = WhiteText)
+            }
+
             Text(
-                text = "Chat messages will appear here.",
+                text = "Chat with $workerId",
                 color = WhiteText,
-                style = MaterialTheme.typography.bodyLarge
+                style = MaterialTheme.typography.titleLarge
             )
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
-
-        Button(
-            onClick = { navController.navigate(Routes.TaskScheduleScreen) },
-            colors = ButtonDefaults.buttonColors(containerColor = OrangePrimary),
-            modifier = Modifier.fillMaxWidth()
+        LazyColumn(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(8.dp)
         ) {
-            Text("Send Message", color = WhiteText)
+            items(messages) { msg ->
+                Text(
+                    text = msg,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp)
+                        .background(OrangePrimary)
+                        .padding(12.dp),
+                    color = WhiteText
+                )
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            TextField(
+                value = messageText,
+                onValueChange = { messageText = it },
+                modifier = Modifier.weight(1f),
+                placeholder = { Text("Type a message") },
+                colors = TextFieldDefaults.colors(
+                    focusedTextColor = WhiteText,
+                    unfocusedTextColor = WhiteText,
+                    focusedContainerColor = OrangePrimary,
+                    unfocusedContainerColor = OrangePrimary,
+                    cursorColor = WhiteText,
+                    focusedIndicatorColor = OrangePrimary,
+                    unfocusedIndicatorColor = OrangePrimary,
+                    focusedPlaceholderColor = WhiteText,
+                    unfocusedPlaceholderColor = WhiteText
+                )
+            )
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Button(
+                onClick = {
+                    if (messageText.isNotBlank()) {
+                        messages = messages + messageText
+                        messageText = ""
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = OrangePrimary)
+            ) {
+                Text("Send", color = WhiteText)
+            }
         }
     }
-}
-
-@Composable
-@Preview(showBackground = true)
-fun ChatScreenPreview() {
-    ChatScreen(navController = rememberNavController())
 }
